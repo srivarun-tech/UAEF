@@ -15,7 +15,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class DatabaseSettings(BaseSettings):
     """Database connection configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="UAEF_DB_")
+    model_config = SettingsConfigDict(
+        env_prefix="UAEF_DB_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     url: str = Field(
         default="postgresql://localhost:5432/uaef",
@@ -30,7 +35,12 @@ class DatabaseSettings(BaseSettings):
 class SecuritySettings(BaseSettings):
     """Security and authentication configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="UAEF_SECURITY_")
+    model_config = SettingsConfigDict(
+        env_prefix="UAEF_SECURITY_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     jwt_secret: SecretStr = Field(
         default="change-me-in-production",
@@ -47,7 +57,12 @@ class SecuritySettings(BaseSettings):
 class LedgerSettings(BaseSettings):
     """Trust ledger configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="UAEF_LEDGER_")
+    model_config = SettingsConfigDict(
+        env_prefix="UAEF_LEDGER_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     hash_algorithm: str = Field(default="sha256")
     require_signature: bool = Field(default=True)
@@ -60,7 +75,12 @@ class LedgerSettings(BaseSettings):
 class AgentSettings(BaseSettings):
     """Agent orchestration configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="UAEF_AGENT_")
+    model_config = SettingsConfigDict(
+        env_prefix="UAEF_AGENT_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     anthropic_api_key: SecretStr = Field(
         default="",
@@ -75,7 +95,12 @@ class AgentSettings(BaseSettings):
 class SettlementSettings(BaseSettings):
     """Incentive settlement engine configuration."""
 
-    model_config = SettingsConfigDict(env_prefix="UAEF_SETTLEMENT_")
+    model_config = SettingsConfigDict(
+        env_prefix="UAEF_SETTLEMENT_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     default_currency: str = Field(default="USD")
     auto_settle: bool = Field(default=False)

@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UAEF Pilot Cockpit</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1f3a 0%, #2d3561 100%);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+            border: 1px solid rgba(99, 179, 237, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 179, 237, 0.05) 0%, transparent 70%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        h1 {
+            font-size: 2.8em;
+            background: linear-gradient(135deg, #63b3ed 0%, #4299e1 50%, #3182ce 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: #a0aec0;
+            font-size: 1.1em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #48bb78;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 2s ease-in-out infinite;
+            box-shadow: 0 0 10px #48bb78;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #1e2746 0%, #2a3254 100%);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(99, 179, 237, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 179, 237, 0.05) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(99, 179, 237, 0.3);
+            border-color: rgba(99, 179, 237, 0.3);
+        }
+
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+
+        .metric-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+
+        .metric-value {
+            font-size: 2.8em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        .metric-label {
+            color: #718096;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .tile {
+            background: linear-gradient(135deg, #1e2746 0%, #2a3254 100%);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(99, 179, 237, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tile:hover {
+            border-color: rgba(99, 179, 237, 0.3);
+            box-shadow: 0 15px 40px rgba(99, 179, 237, 0.2);
+        }
+
+        .tile-full { grid-column: span 12; }
+        .tile-half { grid-column: span 6; }
+        .tile-third { grid-column: span 4; }
+        .tile-two-thirds { grid-column: span 8; }
+
+        @media (max-width: 1200px) {
+            .tile-half, .tile-third, .tile-two-thirds { grid-column: span 12; }
+        }
+
+        .tile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(99, 179, 237, 0.1);
+        }
+
+        .tile-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tile-title-icon {
+            font-size: 1.2em;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .data-table thead th {
+            background: rgba(99, 179, 237, 0.05);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #a0aec0;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+        }
+
+        .data-table tbody tr {
+            background: rgba(30, 39, 70, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(99, 179, 237, 0.1);
+            transform: translateX(4px);
+        }
+
+        .data-table tbody td {
+            padding: 14px 12px;
+            border: none;
+            color: #cbd5e0;
+            font-size: 0.95em;
+        }
+
+        .data-table tbody tr td:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .data-table tbody tr td:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-success {
+            background: rgba(72, 187, 120, 0.2);
+            color: #68d391;
+            border: 1px solid rgba(72, 187, 120, 0.3);
+        }
+
+        .badge-warning {
+            background: rgba(237, 137, 54, 0.2);
+            color: #f6ad55;
+            border: 1px solid rgba(237, 137, 54, 0.3);
+        }
+
+        .badge-info {
+            background: rgba(99, 179, 237, 0.2);
+            color: #63b3ed;
+            border: 1px solid rgba(99, 179, 237, 0.3);
+        }
+
+        .badge-danger {
+            background: rgba(245, 101, 101, 0.2);
+            color: #fc8181;
+            border: 1px solid rgba(245, 101, 101, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+            font-style: italic;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .timestamp {
+            font-size: 0.85em;
+            color: #718096;
+        }
+
+        .mini-chart {
+            display: flex;
+            gap: 4px;
+            align-items: flex-end;
+            height: 40px;
+            margin-top: 15px;
+        }
+
+        .mini-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #4299e1 0%, #2b6cb0 100%);
+            border-radius: 3px 3px 0 0;
+            min-height: 10%;
+            animation: grow 0.5s ease-out;
+        }
+
+        @keyframes grow {
+            from { transform: scaleY(0); }
+            to { transform: scaleY(1); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #4a5568;
+            margin-top: 40px;
+            border-top: 1px solid rgba(99, 179, 237, 0.1);
+        }
+
+        .update-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: rgba(72, 187, 120, 0.1);
+            border: 1px solid rgba(72, 187, 120, 0.2);
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: #63b3ed;
+        }
+
+        strong {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+
+        .scroll-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scroll-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(99, 179, 237, 0.3);
+            border-radius: 4px;
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 179, 237, 0.5);
+        }
+
+        .pulse-animation {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(99, 179, 237, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(99, 179, 237, 0.6); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 UAEF Pilot Cockpit</h1>
+            <p class="subtitle">
+                <span class="status-indicator"></span>
+                Universal Autonomous Enterprise Fabric - Real-Time Control Center
+            </p>
+        </header>
+
+        <!-- Metrics Overview -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">🤖</div>
+                <div class="metric-value" id="stat-agents">--</div>
+                <div class="metric-label">Active Agents</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">⚙️</div>
+                <div class="metric-value" id="stat-workflows">--</div>
+                <div class="metric-label">Workflows</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">▶️</div>
+                <div class="metric-value" id="stat-executions">--</div>
+                <div class="metric-label">Executions</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">📋</div>
+                <div class="metric-value" id="stat-events">--</div>
+                <div class="metric-label">Events</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">💰</div>
+                <div class="metric-value" id="stat-settlements">--</div>
+                <div class="metric-label">Settlements</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Agents Tile -->
+            <div class="tile tile-half">
+                <div class="tile-header">
+                    <h2 class="tile-title">
+                        <span class="tile-title-icon">🤖</span>
+                        AI Agents
+                    </h2>
+                    <button class="refresh-btn" onclick="refreshAgents()">🔄 Refresh</button>
+                </div>
+                <div class="scroll-container" id="agents-content">
+                    <div class="loading">Loading agents</div>
+                </div>
+            </div>
+
+            <!-- Workflows Tile -->
+            <div class="tile tile-half">
+                <div class="tile-header">
+                    <h2 class="tile-title">
+                        <span class="tile-title-icon">⚙️</span>
+                        Workflows
+                    </h2>
+                    <button class="refresh-btn" onclick="refreshWorkflows()">🔄 Refresh</button>
+                </div>
+                <div class="scroll-container" id="workflows-content">
+                    <div class="loading">Loading workflows</div>
+                </div>
+            </div>
+
+            <!-- Executions Tile -->
+            <div class="tile tile-two-thirds">
+                <div class="tile-header">
+                    <h2 class="tile-title">
+                        <span class="tile-title-icon">▶️</span>
+                        Recent Executions
+                    </h2>
+                    <button class="refresh-btn" onclick="refreshExecutions()">🔄 Refresh</button>
+                </div>
+                <div class="scroll-container" id="executions-content">
+                    <div class="loading">Loading executions</div>
+                </div>
+            </div>
+
+            <!-- Settlements Tile -->
+            <div class="tile tile-third">
+                <div class="tile-header">
+                    <h2 class="tile-title">
+                        <span class="tile-title-icon">💰</span>
+                        Settlements
+                    </h2>
+                    <button class="refresh-btn" onclick="refreshSettlements()">🔄 Refresh</button>
+                </div>
+                <div class="scroll-container" id="settlements-content">
+                    <div class="loading">Loading settlements</div>
+                </div>
+            </div>
+
+            <!-- Ledger Events Tile -->
+            <div class="tile tile-full">
+                <div class="tile-header">
+                    <h2 class="tile-title">
+                        <span class="tile-title-icon">📋</span>
+                        Ledger Event Stream
+                    </h2>
+                    <button class="refresh-btn" onclick="refreshEvents()">🔄 Refresh</button>
+                </div>
+                <div class="scroll-container" id="events-content">
+                    <div class="loading">Loading events</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Universal Autonomous Enterprise Fabric</strong> v0.1.0</p>
+            <div class="update-badge">
+                Last updated: <span id="last-update">--</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/stats`);
+                const stats = await response.json();
+
+                document.getElementById('stat-agents').textContent = `${stats.active_agents}/${stats.total_agents}`;
+                document.getElementById('stat-workflows').textContent = stats.total_workflows;
+                document.getElementById('stat-executions').textContent = stats.total_executions;
+                document.getElementById('stat-events').textContent = stats.total_events;
+                document.getElementById('stat-settlements').textContent = stats.pending_settlements;
+
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Load agents
+        async function refreshAgents() {
+            const content = document.getElementById('agents-content');
+            content.innerHTML = '<div class="loading">Loading agents</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/agents`);
+                const agents = await response.json();
+
+                if (agents.length === 0) {
+                    content.innerHTML = '<div class="empty-state"><div class="empty-icon">🤖</div><p>No agents registered</p></div>';
+                    return;
+                }
+
+                let html = '<table class="data-table"><thead><tr><th>Name</th><th>Type</th><th>Model</th><th>Status</th></tr></thead><tbody>';
+                agents.forEach(agent => {
+                    const badgeClass = agent.status === 'active' ? 'badge-success' : 'badge-danger';
+                    html += `
+                        <tr>
+                            <td><strong>${agent.name}</strong></td>
+                            <td>${agent.agent_type}</td>
+                            <td><code>${agent.model}</code></td>
+                            <td><span class="badge ${badgeClass}">${agent.status}</span></td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                content.innerHTML = html;
+            } catch (error) {
+                content.innerHTML = `<div class="empty-state">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Load workflows
+        async function refreshWorkflows() {
+            const content = document.getElementById('workflows-content');
+            content.innerHTML = '<div class="loading">Loading workflows</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/workflows`);
+                const workflows = await response.json();
+
+                if (workflows.length === 0) {
+                    content.innerHTML = '<div class="empty-state"><div class="empty-icon">⚙️</div><p>No workflows defined</p></div>';
+                    return;
+                }
+
+                let html = '<table class="data-table"><thead><tr><th>Name</th><th>Tasks</th><th>Status</th></tr></thead><tbody>';
+                workflows.forEach(workflow => {
+                    const badgeClass = workflow.is_active ? 'badge-success' : 'badge-danger';
+                    html += `
+                        <tr>
+                            <td><strong>${workflow.name}</strong></td>
+                            <td>${workflow.task_count}</td>
+                            <td><span class="badge ${badgeClass}">${workflow.is_active ? 'Active' : 'Inactive'}</span></td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                content.innerHTML = html;
+            } catch (error) {
+                content.innerHTML = `<div class="empty-state">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Load executions
+        async function refreshExecutions() {
+            const content = document.getElementById('executions-content');
+            content.innerHTML = '<div class="loading">Loading executions</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/executions?limit=15`);
+                const executions = await response.json();
+
+                if (executions.length === 0) {
+                    content.innerHTML = '<div class="empty-state"><div class="empty-icon">▶️</div><p>No executions yet</p></div>';
+                    return;
+                }
+
+                let html = '<table class="data-table"><thead><tr><th>ID</th><th>Status</th><th>Started</th><th>Completed</th></tr></thead><tbody>';
+                executions.forEach(exec => {
+                    const badgeClass = exec.status === 'completed' ? 'badge-success' : 'badge-warning';
+                    const completed = exec.completed_at ? new Date(exec.completed_at).toLocaleTimeString() : '-';
+                    html += `
+                        <tr>
+                            <td><code>${exec.id.substring(0, 8)}</code></td>
+                            <td><span class="badge ${badgeClass}">${exec.status}</span></td>
+                            <td class="timestamp">${new Date(exec.created_at).toLocaleTimeString()}</td>
+                            <td class="timestamp">${completed}</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                content.innerHTML = html;
+            } catch (error) {
+                content.innerHTML = `<div class="empty-state">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Load events
+        async function refreshEvents() {
+            const content = document.getElementById('events-content');
+            content.innerHTML = '<div class="loading">Loading events</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/events?limit=30`);
+                const events = await response.json();
+
+                if (events.length === 0) {
+                    content.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No events recorded</p></div>';
+                    return;
+                }
+
+                let html = '<table class="data-table"><thead><tr><th>Seq</th><th>Event Type</th><th>Workflow</th><th>Time</th></tr></thead><tbody>';
+                events.forEach(event => {
+                    const workflowId = event.workflow_id ? event.workflow_id.substring(0, 8) : '-';
+                    html += `
+                        <tr>
+                            <td><strong>#${event.sequence}</strong></td>
+                            <td><code>${event.event_type}</code></td>
+                            <td>${workflowId}</td>
+                            <td class="timestamp">${new Date(event.created_at).toLocaleTimeString()}</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                content.innerHTML = html;
+            } catch (error) {
+                content.innerHTML = `<div class="empty-state">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Load settlements
+        async function refreshSettlements() {
+            const content = document.getElementById('settlements-content');
+            content.innerHTML = '<div class="loading">Loading settlements</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/settlements`);
+                const settlements = await response.json();
+
+                if (settlements.length === 0) {
+                    content.innerHTML = '<div class="empty-state"><div class="empty-icon">💰</div><p>No settlements</p></div>';
+                    return;
+                }
+
+                let html = '<table class="data-table"><thead><tr><th>Amount</th><th>Status</th><th>Time</th></tr></thead><tbody>';
+                settlements.forEach(settlement => {
+                    const badgeClass = settlement.status === 'pending' ? 'badge-info' : 'badge-success';
+                    html += `
+                        <tr>
+                            <td><strong>${settlement.amount} ${settlement.currency}</strong></td>
+                            <td><span class="badge ${badgeClass}">${settlement.status}</span></td>
+                            <td class="timestamp">${new Date(settlement.created_at).toLocaleTimeString()}</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                content.innerHTML = html;
+            } catch (error) {
+                content.innerHTML = `<div class="empty-state">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            refreshAgents();
+            refreshWorkflows();
+            refreshExecutions();
+            refreshEvents();
+            refreshSettlements();
+
+            // Auto-refresh every 5 seconds
+            setInterval(() => {
+                loadStats();
+                refreshAgents();
+                refreshWorkflows();
+                refreshExecutions();
+                refreshEvents();
+                refreshSettlements();
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
