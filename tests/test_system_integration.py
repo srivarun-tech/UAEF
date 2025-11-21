@@ -8,9 +8,9 @@ import pytest
 
 from uaef.core.security import HashService
 from uaef.ledger import EventType, LedgerEventService, VerificationService
-from uaef.orchestration import AgentRegistry
-from uaef.orchestration.models import WorkflowDefinition
-from uaef.orchestration.workflow import WorkflowService
+from uaef.agents import AgentRegistry
+from uaef.agents.models import WorkflowDefinition
+from uaef.agents.workflow import WorkflowService
 from uaef.settlement import SettlementService
 from uaef.settlement.models import RecipientType
 
@@ -124,7 +124,7 @@ class TestSystemIntegration:
 
         # Complete the task manually (simulating agent work)
         from sqlalchemy import select
-        from uaef.orchestration.models import TaskExecution
+        from uaef.agents.models import TaskExecution
 
         result = await session.execute(
             select(TaskExecution).where(
@@ -205,7 +205,7 @@ class TestSystemIntegration:
 
         # Complete task
         from sqlalchemy import select
-        from uaef.orchestration.models import TaskExecution
+        from uaef.agents.models import TaskExecution
 
         result = await session.execute(
             select(TaskExecution).where(

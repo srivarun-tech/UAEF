@@ -124,7 +124,7 @@ Agents are autonomous workers powered by Claude. They execute tasks within workf
 
 ```python
 from uaef.core import get_session
-from uaef.orchestration import AgentRegistry
+from uaef.agents import AgentRegistry
 
 async with get_session() as session:
     registry = AgentRegistry(session)
@@ -145,7 +145,7 @@ async with get_session() as session:
 Workflows define sequences of tasks with dependencies (DAG).
 
 ```python
-from uaef.orchestration import WorkflowService
+from uaef.agents import WorkflowService
 
 async with get_session() as session:
     service = WorkflowService(session)
@@ -246,7 +246,7 @@ await connector.disconnect()
 
 ```python
 from sqlalchemy import select
-from uaef.orchestration.models import WorkflowExecution
+from uaef.agents.models import WorkflowExecution
 
 async with get_session() as session:
     result = await session.execute(
@@ -263,8 +263,8 @@ async with get_session() as session:
 ### List Active Agents
 
 ```python
-from uaef.orchestration import AgentRegistry
-from uaef.orchestration.models import AgentStatus
+from uaef.agents import AgentRegistry
+from uaef.agents.models import AgentStatus
 
 async with get_session() as session:
     registry = AgentRegistry(session)

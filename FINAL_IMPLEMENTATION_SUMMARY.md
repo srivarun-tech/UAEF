@@ -270,7 +270,7 @@ pytest -v
 
 ```python
 from uaef.core import get_session
-from uaef.orchestration import WorkflowService, AgentRegistry
+from uaef.agents import WorkflowService, AgentRegistry
 
 # Register an agent
 async with get_session() as session:

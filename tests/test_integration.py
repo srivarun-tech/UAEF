@@ -11,9 +11,9 @@ import pytest
 from uaef.core import get_session
 from uaef.core.security import HashService
 from uaef.ledger import EventType, LedgerEventService, VerificationService
-from uaef.orchestration import AgentRegistry, ClaudeAgentExecutor
-from uaef.orchestration.models import WorkflowDefinition
-from uaef.orchestration.workflow import TaskScheduler, WorkflowService
+from uaef.agents import AgentRegistry, ClaudeAgentExecutor
+from uaef.agents.models import WorkflowDefinition
+from uaef.agents.workflow import TaskScheduler, WorkflowService
 from uaef.settlement import SettlementService
 from uaef.settlement.models import RecipientType, SettlementStatus
 

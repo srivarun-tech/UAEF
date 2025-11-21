@@ -11,9 +11,9 @@ from sqlalchemy import select
 
 from uaef.core import configure_logging, get_session
 from uaef.ledger import LedgerEventService
-from uaef.orchestration import AgentRegistry
-from uaef.orchestration.models import WorkflowDefinition, WorkflowExecution
-from uaef.orchestration.workflow import WorkflowService
+from uaef.agents import AgentRegistry
+from uaef.agents.models import WorkflowDefinition, WorkflowExecution
+from uaef.agents.workflow import WorkflowService
 from uaef.settlement import SettlementService
 from uaef.settlement.models import SettlementSignal, SettlementRule
 

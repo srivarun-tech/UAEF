@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from uaef.orchestration.agents import AgentRegistry, ClaudeAgentExecutor
-from uaef.orchestration.models import Agent, AgentStatus
+from uaef.agents.agents import AgentRegistry, ClaudeAgentExecutor
+from uaef.agents.models import Agent, AgentStatus
 
 
 class TestAgentRegistry:

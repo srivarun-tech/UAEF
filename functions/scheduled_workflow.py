@@ -66,7 +66,7 @@ def handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:
         import asyncio
 
         from uaef.core import get_session
-        from uaef.orchestration import WorkflowService
+        from uaef.agents import WorkflowService
 
         # Start workflow
         async def start_scheduled_workflow():

@@ -9,7 +9,7 @@ from decimal import Decimal
 
 from uaef.core import configure_logging, get_session, init_db
 from uaef.ledger import EventType, LedgerEventService
-from uaef.orchestration import AgentRegistry, WorkflowService
+from uaef.agents import AgentRegistry, WorkflowService
 from uaef.settlement import RecipientType, SettlementService
 
 

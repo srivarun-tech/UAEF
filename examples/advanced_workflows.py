@@ -15,8 +15,8 @@ import asyncio
 from decimal import Decimal
 from datetime import datetime
 from uaef.core import configure_logging, get_session, init_db
-from uaef.orchestration import AgentRegistry, WorkflowService, ClaudeAgentExecutor
-from uaef.orchestration.models import WorkflowDefinition
+from uaef.agents import AgentRegistry, WorkflowService, ClaudeAgentExecutor
+from uaef.agents.models import WorkflowDefinition
 from uaef.ledger import LedgerEventService
 from uaef.settlement import SettlementService
 

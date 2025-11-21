@@ -65,7 +65,7 @@ Achieve test coverage for existing core, ledger, and orchestration modules.
 - [x] Test `uaef.ledger.events` - LedgerEventService, AuditTrailService
 - [ ] Test `uaef.ledger.compliance` - ComplianceService, rule evaluation
 - [ ] Test `uaef.ledger.verification` - VerificationService chain integrity
-- [x] Test `uaef.orchestration.agents` - AgentRegistry, ClaudeAgentExecutor
+- [x] Test `uaef.agents.agents` - AgentRegistry, ClaudeAgentExecutor
 
 **Note**: Core test coverage established. Additional tests can be added incrementally.
 
@@ -187,7 +187,7 @@ Create AWS Lambda handlers for event-driven workflow execution.
 # functions/workflow_trigger.py
 from aws_lambda_powertools import Logger, Tracer
 from uaef.core import get_session
-from uaef.orchestration import WorkflowService
+from uaef.agents import WorkflowService
 
 logger = Logger()
 tracer = Tracer()

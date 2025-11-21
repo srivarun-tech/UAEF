@@ -15,7 +15,7 @@ from uaef.core.config import get_settings
 from uaef.core.logging import get_logger
 from uaef.core.security import HashService, generate_api_key
 from uaef.ledger import EventType, LedgerEventService
-from uaef.orchestration.models import Agent, AgentStatus
+from uaef.agents.models import Agent, AgentStatus
 
 logger = get_logger(__name__)
 

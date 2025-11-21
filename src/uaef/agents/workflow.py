@@ -13,8 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from uaef.core.logging import get_logger
 from uaef.ledger import EventType, LedgerEventService
-from uaef.orchestration.agents import AgentRegistry, ClaudeAgentExecutor
-from uaef.orchestration.models import (
+from uaef.agents.agents import AgentRegistry, ClaudeAgentExecutor
+from uaef.agents.models import (
     Agent,
     AgentStatus,
     HumanApproval,

@@ -21,8 +21,8 @@ from decimal import Decimal
 from datetime import datetime
 
 from uaef.core import get_session, configure_logging
-from uaef.orchestration import AgentRegistry, WorkflowService, ClaudeAgentExecutor
-from uaef.orchestration.models import WorkflowDefinition, Agent
+from uaef.agents import AgentRegistry, WorkflowService, ClaudeAgentExecutor
+from uaef.agents.models import WorkflowDefinition, Agent
 from uaef.ledger import LedgerEventService
 from uaef.settlement import SettlementService
 from sqlalchemy import select
@@ -130,7 +130,7 @@ async def get_system_stats():
         total_workflows = len(workflows)
 
         # Count executions
-        from uaef.orchestration.models import WorkflowExecution
+        from uaef.agents.models import WorkflowExecution
         executions_result = await session.execute(select(WorkflowExecution))
         executions = executions_result.scalars().all()
         total_executions = len(executions)
@@ -271,7 +271,7 @@ async def execute_workflow(execution_data: WorkflowExecute):
 async def list_executions(limit: int = 20):
     """List recent workflow executions."""
     async with get_session() as session:
-        from uaef.orchestration.models import WorkflowExecution
+        from uaef.agents.models import WorkflowExecution
         result = await session.execute(
             select(WorkflowExecution)
             .order_by(WorkflowExecution.created_at.desc())
@@ -294,7 +294,7 @@ async def list_executions(limit: int = 20):
 async def get_execution(execution_id: str):
     """Get execution details with events."""
     async with get_session() as session:
-        from uaef.orchestration.models import WorkflowExecution
+        from uaef.agents.models import WorkflowExecution
         ledger_service = LedgerEventService(session)
 
         result = await session.execute(

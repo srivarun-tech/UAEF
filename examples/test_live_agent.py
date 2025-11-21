@@ -8,9 +8,9 @@ import asyncio
 
 from uaef.core import configure_logging, get_session
 from uaef.ledger import EventType, LedgerEventService
-from uaef.orchestration import AgentRegistry, ClaudeAgentExecutor
-from uaef.orchestration.models import AgentStatus, WorkflowDefinition
-from uaef.orchestration.workflow import WorkflowService
+from uaef.agents import AgentRegistry, ClaudeAgentExecutor
+from uaef.agents.models import AgentStatus, WorkflowDefinition
+from uaef.agents.workflow import WorkflowService
 from uaef.settlement import SettlementService
 
 

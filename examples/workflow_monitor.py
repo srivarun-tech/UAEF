@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from uaef.core import configure_logging, get_session
 from uaef.ledger import AuditTrailService, LedgerEventService
-from uaef.orchestration.models import TaskStatus, WorkflowExecution, WorkflowStatus
+from uaef.agents.models import TaskStatus, WorkflowExecution, WorkflowStatus
 from uaef.settlement import SettlementService
 from sqlalchemy import select
 
@@ -79,7 +79,7 @@ async def view_workflow_details(workflow_id: str):
             print(f"   Duration: {duration}")
 
         # Get tasks
-        from uaef.orchestration.models import TaskExecution
+        from uaef.agents.models import TaskExecution
 
         result = await session.execute(
             select(TaskExecution)
@@ -134,7 +134,7 @@ async def view_workflow_details(workflow_id: str):
 async def view_agent_stats():
     """View statistics for all agents."""
     async with get_session() as session:
-        from uaef.orchestration.models import Agent
+        from uaef.agents.models import Agent
 
         result = await session.execute(
             select(Agent).order_by(Agent.name)

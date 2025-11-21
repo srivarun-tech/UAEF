@@ -1,17 +1,31 @@
 """
-UAEF Agent Orchestration Models
+UAEF Agent Integration Models
 
-Database models for agents, workflows, tasks, and policies.
+Database models for platform-agnostic agents, workflows, tasks, and policies.
+Supports agents from LangChain, AutoGPT, CrewAI, Temporal, and custom platforms.
 """
 
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import JSON, ForeignKey, Index, String, Text
+from sqlalchemy import JSON, ForeignKey, Index, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from uaef.core.database import Base, TimestampMixin, UUIDMixin
+
+
+class AgentPlatform(str, Enum):
+    """Supported agent platforms."""
+
+    LANGCHAIN = "langchain"
+    AUTOGPT = "autogpt"
+    CREWAI = "crewai"
+    AUTOGEN = "autogen"
+    TEMPORAL = "temporal"
+    CLAUDE = "claude"  # Direct Claude via Anthropic API
+    CUSTOM = "custom"  # Generic REST API
 
 
 class AgentStatus(str, Enum):
@@ -23,6 +37,17 @@ class AgentStatus(str, Enum):
     PAUSED = "paused"
     ERROR = "error"
     DEACTIVATED = "deactivated"
+
+
+class ExecutionStatus(str, Enum):
+    """Status of an agent execution."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
+    TIMEOUT = "timeout"
+    CANCELLED = "cancelled"
 
 
 class WorkflowStatus(str, Enum):
@@ -52,9 +77,10 @@ class TaskStatus(str, Enum):
 
 class Agent(Base, UUIDMixin, TimestampMixin):
     """
-    Registered autonomous agent.
+    Registered autonomous agent (platform-agnostic).
 
-    Agents are the execution units that perform tasks within workflows.
+    Agents can be from any platform: LangChain, AutoGPT, CrewAI, Temporal, etc.
+    UAEF provides a universal interface to execute agents on their native platforms.
     """
 
     __tablename__ = "agents"
@@ -62,11 +88,21 @@ class Agent(Base, UUIDMixin, TimestampMixin):
     # Agent identification
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
+
+    # Platform integration
+    platform: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default=AgentPlatform.CLAUDE,
+    )  # Platform type (langchain, autogpt, crewai, etc.)
+    endpoint_url: Mapped[str | None] = mapped_column(Text)  # API endpoint for remote agents
+
+    # Legacy field for backwards compatibility
     agent_type: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         default="claude",
-    )  # claude, custom, external
+    )  # Deprecated: use 'platform' instead
 
     # Status
     status: Mapped[str] = mapped_column(
@@ -86,6 +122,11 @@ class Agent(Base, UUIDMixin, TimestampMixin):
         nullable=False,
         default=dict,
     )
+    agent_metadata: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )  # Platform-specific metadata
 
     # Model configuration (for Claude agents)
     model: Mapped[str | None] = mapped_column(String(50))
@@ -96,7 +137,10 @@ class Agent(Base, UUIDMixin, TimestampMixin):
         default=list,
     )
 
-    # Metrics
+    # Owner/Creator
+    owner_id: Mapped[str | None] = mapped_column(String(36))
+
+    # Metrics (legacy - use AgentReputation instead)
     total_tasks: Mapped[int] = mapped_column(default=0)
     successful_tasks: Mapped[int] = mapped_column(default=0)
     failed_tasks: Mapped[int] = mapped_column(default=0)
@@ -107,6 +151,7 @@ class Agent(Base, UUIDMixin, TimestampMixin):
     __table_args__ = (
         Index("ix_agents_status", "status"),
         Index("ix_agents_type", "agent_type"),
+        Index("ix_agents_platform", "platform"),
     )
 
 
@@ -391,4 +436,139 @@ class HumanApproval(Base, UUIDMixin, TimestampMixin):
     __table_args__ = (
         Index("ix_human_approvals_task", "task_execution_id"),
         Index("ix_human_approvals_status", "status"),
+    )
+
+
+class AgentExecution(Base, UUIDMixin, TimestampMixin):
+    """
+    Platform-agnostic agent execution record.
+
+    Tracks individual agent invocations across all platforms with
+    performance metrics and results.
+    """
+
+    __tablename__ = "agent_executions"
+
+    # Link to agent
+    agent_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("agents.id"),
+        nullable=False,
+    )
+    agent: Mapped[Agent] = relationship()
+
+    # Execution details
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=ExecutionStatus.PENDING,
+    )
+
+    # Input/Output
+    input_data: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+    output_data: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    context: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
+    # Timing
+    started_at: Mapped[datetime | None] = mapped_column()
+    completed_at: Mapped[datetime | None] = mapped_column()
+
+    # Performance metrics
+    latency_ms: Mapped[int | None] = mapped_column()  # Execution time in milliseconds
+    cost: Mapped[Decimal | None] = mapped_column(Numeric(10, 4))  # Execution cost
+    currency: Mapped[str] = mapped_column(String(3), default="USD")
+
+    # Error handling
+    error_message: Mapped[str | None] = mapped_column(Text)
+    error_code: Mapped[str | None] = mapped_column(String(50))
+
+    # Ledger integration
+    ledger_event_id: Mapped[str | None] = mapped_column(String(36))  # Link to ledger event
+
+    # User tracking
+    user_id: Mapped[str | None] = mapped_column(String(36))
+
+    __table_args__ = (
+        Index("ix_agent_executions_agent", "agent_id"),
+        Index("ix_agent_executions_status", "status"),
+        Index("ix_agent_executions_user", "user_id"),
+        Index("ix_agent_executions_created", "created_at"),
+    )
+
+
+class AgentReputation(Base, UUIDMixin, TimestampMixin):
+    """
+    Agent reputation and performance tracking.
+
+    Aggregated metrics for agent quality, reliability, and trust scores.
+    """
+
+    __tablename__ = "agent_reputations"
+
+    # Link to agent (one-to-one)
+    agent_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("agents.id"),
+        nullable=False,
+        unique=True,
+    )
+    agent: Mapped[Agent] = relationship()
+
+    # Execution metrics
+    total_executions: Mapped[int] = mapped_column(default=0)
+    successful_executions: Mapped[int] = mapped_column(default=0)
+    failed_executions: Mapped[int] = mapped_column(default=0)
+
+    # Success rate (0.0 to 1.0)
+    success_rate: Mapped[Decimal] = mapped_column(
+        Numeric(5, 4),
+        default=Decimal("0.0"),
+    )
+
+    # Performance metrics
+    avg_latency_ms: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("0.0"),
+    )
+    p50_latency_ms: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    p95_latency_ms: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    p99_latency_ms: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+
+    # Cost metrics
+    avg_cost: Mapped[Decimal] = mapped_column(
+        Numeric(10, 4),
+        default=Decimal("0.0"),
+    )
+    total_cost: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("0.0"),
+    )
+    currency: Mapped[str] = mapped_column(String(3), default="USD")
+
+    # Trust score (0-100)
+    trust_score: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2),
+        default=Decimal("0.0"),
+    )
+
+    # Last execution
+    last_execution_at: Mapped[datetime | None] = mapped_column()
+    last_success_at: Mapped[datetime | None] = mapped_column()
+    last_failure_at: Mapped[datetime | None] = mapped_column()
+
+    # Recalculation timestamp
+    last_updated: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("ix_agent_reputations_agent", "agent_id"),
+        Index("ix_agent_reputations_trust_score", "trust_score"),
+        Index("ix_agent_reputations_success_rate", "success_rate"),
     )

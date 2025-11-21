@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from uaef.orchestration.models import AgentStatus, TaskStatus, WorkflowStatus
-from uaef.orchestration.workflow import TaskScheduler, WorkflowService
+from uaef.agents.models import AgentStatus, TaskStatus, WorkflowStatus
+from uaef.agents.workflow import TaskScheduler, WorkflowService
 
 
 class TestWorkflowService:
@@ -109,7 +109,7 @@ class TestWorkflowService:
             # Verify tasks were created
             from sqlalchemy import select
 
-            from uaef.orchestration.models import TaskExecution
+            from uaef.agents.models import TaskExecution
 
             result = await session.execute(
                 select(TaskExecution).where(
@@ -153,7 +153,7 @@ class TestWorkflowService:
         )
 
         # Create and activate agent
-        from uaef.orchestration.agents import AgentRegistry
+        from uaef.agents.agents import AgentRegistry
 
         registry = AgentRegistry(session)
         agent, _ = await registry.register_agent(**sample_agent_data)
@@ -173,7 +173,7 @@ class TestWorkflowService:
             # Get the task
             from sqlalchemy import select
 
-            from uaef.orchestration.models import TaskExecution
+            from uaef.agents.models import TaskExecution
 
             result = await session.execute(
                 select(TaskExecution).where(
@@ -204,7 +204,7 @@ class TestWorkflowService:
         )
 
         # Create agent
-        from uaef.orchestration.agents import AgentRegistry
+        from uaef.agents.agents import AgentRegistry
 
         registry = AgentRegistry(session)
         agent, _ = await registry.register_agent(**sample_agent_data)
@@ -224,7 +224,7 @@ class TestWorkflowService:
             # Verify tasks have correct dependencies
             from sqlalchemy import select
 
-            from uaef.orchestration.models import TaskExecution
+            from uaef.agents.models import TaskExecution
 
             result = await session.execute(
                 select(TaskExecution)
@@ -251,7 +251,7 @@ class TestTaskScheduler:
     @pytest.mark.asyncio
     async def test_get_ready_tasks_no_dependencies(self, session):
         """Test getting ready tasks when there are no dependencies."""
-        from uaef.orchestration.models import TaskExecution, WorkflowExecution
+        from uaef.agents.models import TaskExecution, WorkflowExecution
 
         # Create workflow execution
         execution = WorkflowExecution(
@@ -290,7 +290,7 @@ class TestTaskScheduler:
     @pytest.mark.asyncio
     async def test_get_ready_tasks_with_dependencies(self, session):
         """Test getting ready tasks with satisfied and unsatisfied dependencies."""
-        from uaef.orchestration.models import TaskExecution, WorkflowExecution
+        from uaef.agents.models import TaskExecution, WorkflowExecution
 
         execution = WorkflowExecution(
             definition_id="def-456",
@@ -345,7 +345,7 @@ class TestTaskScheduler:
     @pytest.mark.asyncio
     async def test_resolve_dependencies_no_deps(self, session):
         """Test resolving dependencies for task with no dependencies."""
-        from uaef.orchestration.models import TaskExecution, WorkflowExecution
+        from uaef.agents.models import TaskExecution, WorkflowExecution
 
         execution = WorkflowExecution(
             definition_id="def-789",
@@ -374,7 +374,7 @@ class TestTaskScheduler:
     @pytest.mark.asyncio
     async def test_resolve_dependencies_satisfied(self, session):
         """Test resolving dependencies when all are satisfied."""
-        from uaef.orchestration.models import TaskExecution, WorkflowExecution
+        from uaef.agents.models import TaskExecution, WorkflowExecution
 
         execution = WorkflowExecution(
             definition_id="def-abc",
@@ -414,7 +414,7 @@ class TestTaskScheduler:
     @pytest.mark.asyncio
     async def test_resolve_dependencies_not_satisfied(self, session):
         """Test resolving dependencies when not all are satisfied."""
-        from uaef.orchestration.models import TaskExecution, WorkflowExecution
+        from uaef.agents.models import TaskExecution, WorkflowExecution
 
         execution = WorkflowExecution(
             definition_id="def-xyz",
@@ -461,7 +461,7 @@ class TestWorkflowIntegration:
         service = WorkflowService(session)
 
         # Create agent
-        from uaef.orchestration.agents import AgentRegistry
+        from uaef.agents.agents import AgentRegistry
 
         registry = AgentRegistry(session)
         agent, _ = await registry.register_agent(**sample_agent_data)

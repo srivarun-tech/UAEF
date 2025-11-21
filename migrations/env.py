@@ -18,7 +18,7 @@ from uaef.core.database import Base
 
 # Import all models to register them with Base.metadata
 from uaef.ledger import models as ledger_models  # noqa: F401
-from uaef.orchestration import models as orchestration_models  # noqa: F401
+from uaef.agents import models as orchestration_models  # noqa: F401
 from uaef.settlement import models as settlement_models  # noqa: F401
 
 config = context.config
