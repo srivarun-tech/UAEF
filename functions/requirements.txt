@@ -1,0 +1,15 @@
+# AWS Lambda Deployment Requirements
+
+# Core UAEF (install from parent directory)
+# pip install -e ..
+
+# AWS
+aws-lambda-powertools>=2.0
+boto3>=1.34
+
+# Database (use PostgreSQL for RDS)
+psycopg2-binary>=2.9
+asyncpg>=0.29
+
+# Optional: Azure if using Azure Functions instead
+# azure-functions>=1.17

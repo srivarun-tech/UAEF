@@ -1,0 +1,280 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: UAEF Serverless Deployment
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 512
+    Runtime: python3.11
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        # Database
+        UAEF_DB_URL: !Sub '{{resolve:secretsmanager:uaef/database:SecretString:url}}'
+
+        # Security
+        UAEF_SECURITY_JWT_SECRET: !Sub '{{resolve:secretsmanager:uaef/security:SecretString:jwt_secret}}'
+        UAEF_SECURITY_ENCRYPTION_KEY: !Sub '{{resolve:secretsmanager:uaef/security:SecretString:encryption_key}}'
+
+        # Agent
+        UAEF_AGENT_ANTHROPIC_API_KEY: !Sub '{{resolve:secretsmanager:uaef/agent:SecretString:anthropic_api_key}}'
+        UAEF_AGENT_DEFAULT_MODEL: claude-sonnet-4-20250514
+
+        # Powertools
+        POWERTOOLS_SERVICE_NAME: uaef
+        POWERTOOLS_METRICS_NAMESPACE: UAEF
+        LOG_LEVEL: INFO
+
+    # VPC Configuration (uncomment if using RDS in VPC)
+    # VpcConfig:
+    #   SecurityGroupIds:
+    #     - !Ref LambdaSecurityGroup
+    #   SubnetIds:
+    #     - !Ref PrivateSubnet1
+    #     - !Ref PrivateSubnet2
+
+    Tracing: Active  # Enable X-Ray tracing
+
+    Tags:
+      Project: UAEF
+      Environment: !Ref Environment
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+    AllowedValues:
+      - development
+      - staging
+      - production
+    Description: Deployment environment
+
+Resources:
+  # API Gateway
+  UAEFApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub uaef-api-${Environment}
+      StageName: !Ref Environment
+      Auth:
+        ApiKeyRequired: true
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Webhook-Signature,X-Webhook-Source'"
+        AllowOrigin: "'*'"
+      TracingEnabled: true
+
+  # API Key
+  UAEFApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: !Sub uaef-api-key-${Environment}
+      Enabled: true
+
+  UAEFUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - UAEFApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref UAEFApi
+          Stage: !Ref Environment
+      Quota:
+        Limit: 10000
+        Period: DAY
+      Throttle:
+        BurstLimit: 200
+        RateLimit: 100
+
+  UAEFUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref UAEFApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UAEFUsagePlan
+
+  # Lambda Functions
+  WorkflowTriggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub uaef-workflow-trigger-${Environment}
+      CodeUri: .
+      Handler: workflow_trigger.handler
+      Description: Triggers workflow executions
+      Events:
+        ApiPost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref UAEFApi
+            Path: /workflows/trigger
+            Method: post
+        EventBridge:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - uaef.workflow
+              detail-type:
+                - WorkflowTrigger
+      Policies:
+        - AWSLambdaVPCAccessExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:uaef/*'
+
+  WebhookReceiverFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub uaef-webhook-receiver-${Environment}
+      CodeUri: .
+      Handler: webhook_receiver.handler
+      Description: Receives webhooks from external systems
+      Events:
+        ApiPost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref UAEFApi
+            Path: /webhooks
+            Method: post
+      Policies:
+        - AWSLambdaVPCAccessExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:uaef/*'
+
+  ScheduledWorkflowFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub uaef-scheduled-workflow-${Environment}
+      CodeUri: .
+      Handler: scheduled_workflow.handler
+      Description: Runs scheduled workflows
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 day)
+            Name: !Sub uaef-daily-schedule-${Environment}
+            Description: Daily workflow execution
+            Input: |
+              {
+                "schedule_name": "daily-report",
+                "definition_id": "REPLACE_WITH_WORKFLOW_ID"
+              }
+        HourlySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
+            Name: !Sub uaef-hourly-schedule-${Environment}
+            Description: Hourly workflow execution
+            Input: |
+              {
+                "schedule_name": "hourly-sync",
+                "definition_id": "REPLACE_WITH_WORKFLOW_ID"
+              }
+      Policies:
+        - AWSLambdaVPCAccessExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:uaef/*'
+
+  # CloudWatch Log Groups
+  WorkflowTriggerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/uaef-workflow-trigger-${Environment}
+      RetentionInDays: 30
+
+  WebhookReceiverLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/uaef-webhook-receiver-${Environment}
+      RetentionInDays: 30
+
+  ScheduledWorkflowLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/uaef-scheduled-workflow-${Environment}
+      RetentionInDays: 30
+
+  # CloudWatch Alarms
+  WorkflowTriggerErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub uaef-workflow-trigger-errors-${Environment}
+      AlarmDescription: Alert on workflow trigger errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref WorkflowTriggerFunction
+
+  # DynamoDB Table for workflow state (optional)
+  # WorkflowStateTable:
+  #   Type: AWS::DynamoDB::Table
+  #   Properties:
+  #     TableName: !Sub uaef-workflow-state-${Environment}
+  #     BillingMode: PAY_PER_REQUEST
+  #     AttributeDefinitions:
+  #       - AttributeName: execution_id
+  #         AttributeType: S
+  #       - AttributeName: created_at
+  #         AttributeType: N
+  #     KeySchema:
+  #       - AttributeName: execution_id
+  #         KeyType: HASH
+  #     GlobalSecondaryIndexes:
+  #       - IndexName: CreatedAtIndex
+  #         KeySchema:
+  #           - AttributeName: created_at
+  #             KeyType: HASH
+  #         Projection:
+  #           ProjectionType: ALL
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub https://${UAEFApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub uaef-api-endpoint-${Environment}
+
+  ApiKey:
+    Description: API Key for accessing the API
+    Value: !Ref UAEFApiKey
+
+  WorkflowTriggerFunctionArn:
+    Description: Workflow Trigger Lambda Function ARN
+    Value: !GetAtt WorkflowTriggerFunction.Arn
+    Export:
+      Name: !Sub uaef-workflow-trigger-arn-${Environment}
+
+  WebhookReceiverFunctionArn:
+    Description: Webhook Receiver Lambda Function ARN
+    Value: !GetAtt WebhookReceiverFunction.Arn
+    Export:
+      Name: !Sub uaef-webhook-receiver-arn-${Environment}
+
+  ScheduledWorkflowFunctionArn:
+    Description: Scheduled Workflow Lambda Function ARN
+    Value: !GetAtt ScheduledWorkflowFunction.Arn
+    Export:
+      Name: !Sub uaef-scheduled-workflow-arn-${Environment}
